@@ -15,6 +15,7 @@
 
     #include <windows.h>
     #include <locale>
+    #include <codecvt> 
 
     // micros and macros for portability
     #define adapter_type PIP_ADAPTER_ADDRESSES
