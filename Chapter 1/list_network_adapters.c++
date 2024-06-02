@@ -22,11 +22,11 @@
     
     #define get_address(this_adapter) (this_adapter->FirstUnicastAddress)
     #define get_next_adapter(this_adapter) (this_adapter->Next)
-    #define get_adapter_name (this_adapter) ({ \
+    #define get_adapter_name(this_adapter) ({ \
         const wchar_t* pwchar_temp = this_adapter->FriendlyName; \
         std::wstring_convert<std::codecvt_utf8<wchar_t>> converter; \
         std::string result = converter.to_bytes(pwchar_temp); \
-        return result; \
+        result; \
     })
     #define get_ip_version(this_address) (this_address->Address.lpSockaddr->sa_family)
     #define get_next_address(this_address) (this_address->Next)
