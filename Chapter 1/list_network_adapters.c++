@@ -70,7 +70,7 @@
     #define get_next_adapter(this_adapter) (this_adapter->ifa_next)
     #define get_adapter_name(this_adapter) (std::string(this_adapter->ifa_name))
     #define get_ip_version(this_address) (this_address->ifa_addr->sa_family)
-    #define get_next_address(this_address) (this_address->ifa_next)
+    #define get_next_address(this_address) (NULL) // this_address->ifa_next - was this before
     #define get_name_info(this_address, the_buffer, the_buffer_size) (getnameinfo(this_address->ifa_addr, (get_ip_version(this_address) == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), the_buffer, the_buffer_size, 0, 0, NI_NUMERICHOST))
     #define free_adapters(the_adapters) (freeifaddrs(the_adapters))
 
@@ -118,7 +118,7 @@ void list_machine_adapters(std::map<std::string, std::map<std::string, std::set<
         for (std::map<std::string, std::set<std::string> >:: iterator ip_ver = adapt_names->second.begin(); ip_ver != adapt_names->second.end(); ip_ver++) {
             printf("\t%s:\n", ip_ver->first.c_str());
             for (std::set<std::string>::iterator ip_addr = ip_ver->second.begin(); ip_addr != ip_ver->second.end(); ip_addr++) {
-                printf("\t\t%s\n", ip_addr->c_str());
+                printf("\t\t\"%s\"\n", ip_addr->c_str());
             }
         }
     }
@@ -183,7 +183,9 @@ std::map<std::string, std::map<std::string, std::set<std::string> > > get_machin
             memset(ip_addr_buffer, 0, buffer_size);
             get_name_info(this_address, ip_addr_buffer, buffer_size);
             ip_address = std::string(ip_addr_buffer);
-
+            // if (ip_address.length() == 0) {
+            //     continue;
+            // }
             if (the_answer.find(adapter_name) == the_answer.end()) {
                 std::map<std::string, std::set<std::string> > internal_map;
                 std::set<std::string> internal_set;
