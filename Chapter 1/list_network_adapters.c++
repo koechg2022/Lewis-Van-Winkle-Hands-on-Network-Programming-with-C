@@ -14,6 +14,7 @@
     #pragma comment(lib, "iphlpapi.lib")
 
     #include <windows.h>
+    #include <locale>
 
     // micros and macros for portability
     #define adapter_type PIP_ADAPTER_ADDRESSES
