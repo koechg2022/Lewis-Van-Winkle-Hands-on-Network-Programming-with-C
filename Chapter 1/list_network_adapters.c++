@@ -17,6 +17,13 @@
     #include <locale>
     #include <codecvt> 
 
+    std::string convert_wide_to_utf8(const wchar_t* wide_str) {
+        int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, nullptr, 0, nullptr, nullptr);
+        std::string utf8_str(utf8_length, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, utf8_str.data(), utf8_length, nullptr, nullptr);
+        return utf8_str;
+    }
+
     // micros and macros for portability
     #define adapter_type PIP_ADAPTER_ADDRESSES
     #define address_type PIP_ADAPTER_UNICAST_ADDRESS
