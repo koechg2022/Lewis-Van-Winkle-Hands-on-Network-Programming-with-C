@@ -18,14 +18,8 @@
 
     #include <windows.h>
     #include <locale>
-    #include <codecvt> 
+    // #include <codecvt>
 
-    // std::string convert_wide_to_utf8(const wchar_t* wide_str) {
-    //     int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, nullptr, 0, nullptr, nullptr);
-    //     std::string utf8_str(utf8_length, 0);
-    //     WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, utf8_str.data(), utf8_length, nullptr, nullptr);
-    //     return utf8_str;
-    // }
 
     // micros and macros for portability
     #define adapter_type PIP_ADAPTER_ADDRESSES
@@ -183,9 +177,6 @@ std::map<std::string, std::map<std::string, std::set<std::string> > > get_machin
             memset(ip_addr_buffer, 0, buffer_size);
             get_name_info(this_address, ip_addr_buffer, buffer_size);
             ip_address = std::string(ip_addr_buffer);
-            // if (ip_address.length() == 0) {
-            //     continue;
-            // }
             if (the_answer.find(adapter_name) == the_answer.end()) {
                 std::map<std::string, std::set<std::string> > internal_map;
                 std::set<std::string> internal_set;
