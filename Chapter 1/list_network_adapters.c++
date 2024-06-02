@@ -129,7 +129,7 @@ std::map<std::string, std::map<std::string, std::set<std::string> > > get_machin
                 exit(EXIT_FAILURE);
             }
 
-            int got_adapts = GetAdapterAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREEFIX, 0, this_machine, &size);
+            int got_adapts = GetAdapterAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, 0, this_machine, &size);
 
             if (got_adapts == ERROR_BUFFER_OVERFLOW) {
                 fprintf(stderr, "Need more memory for this machine's adapters. Will try to get more memory...\n");
@@ -141,7 +141,7 @@ std::map<std::string, std::map<std::string, std::set<std::string> > > get_machin
             }
 
             else {
-                fprintf(stderr, "Unsurprisingly, an unexpected error occured. Your windows machine experienced Error #d\n", got_adapts);
+                fprintf(stderr, "Unsurprisingly, an unexpected error occured. Your windows machine experienced Error %d\n", got_adapts);
                 free(this_machine);
                 exit(EXIT_FAILURE);
             }
