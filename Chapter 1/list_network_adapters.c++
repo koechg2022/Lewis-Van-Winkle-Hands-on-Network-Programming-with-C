@@ -1,5 +1,8 @@
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+    #define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+    #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+    
     #define crap_os
 
     #if !defined(_WIN32_WINNT)
@@ -17,12 +20,12 @@
     #include <locale>
     #include <codecvt> 
 
-    std::string convert_wide_to_utf8(const wchar_t* wide_str) {
-        int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, nullptr, 0, nullptr, nullptr);
-        std::string utf8_str(utf8_length, 0);
-        WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, utf8_str.data(), utf8_length, nullptr, nullptr);
-        return utf8_str;
-    }
+    // std::string convert_wide_to_utf8(const wchar_t* wide_str) {
+    //     int utf8_length = WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, nullptr, 0, nullptr, nullptr);
+    //     std::string utf8_str(utf8_length, 0);
+    //     WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, utf8_str.data(), utf8_length, nullptr, nullptr);
+    //     return utf8_str;
+    // }
 
     // micros and macros for portability
     #define adapter_type PIP_ADAPTER_ADDRESSES
