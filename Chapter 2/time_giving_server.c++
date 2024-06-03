@@ -136,11 +136,14 @@ int main(int len, char** args) {
         exit(EXIT_FAILURE);
     }
     // Done with this machine's information.
-    freeaddrinfo(this_machine);
 
 
     // Start listening.
     printf("Socket is bound. Gonna start listening on the bound socket...\n");
+    char addr_buffer[buffer_size], service_buffer[buffer_size];
+    getnameinfo(this_machine->ai_addr, this_machine->ai_addrlen, addr_buffer, buffer_size, service_buffer, buffer_size, NI_NUMERICHOST | NI_NUMERICSERV);
+    printf("Connect to this machine with\n\thttp://%s:%s\n", addr_buffer, service_buffer);
+    freeaddrinfo(this_machine);
     if (listen(listening_socket, listening_count)) {
         fprintf(stderr, "Failed to start listening on the socket. Error %d\n", get_socket_errno());
         exit(EXIT_FAILURE);
@@ -160,7 +163,6 @@ int main(int len, char** args) {
     }
 
     // Can now communicate with the other machine.
-    char addr_buffer[buffer_size], service_buffer[buffer_size];
 
     getnameinfo((struct sockaddr*) &client_address, client_size, addr_buffer, buffer_size, service_buffer, buffer_size, NI_NAMEREQD);
     printf("%s\t", addr_buffer);
