@@ -111,9 +111,9 @@ int main(int len, char** args) {
     printf("Configuring the local address...\n");
     struct addrinfo* this_machine, hints;
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
+    hints.ai_family = AF_INET; // Looking for an IPv4 address
+    hints.ai_socktype = SOCK_STREAM; // Usind TCP
+    hints.ai_flags = AI_PASSIVE; // Asking getaddrinfo to set up the address so we're listening on any available network interface.
 
     if (getaddrinfo(0, port, &hints, &this_machine)) {
         fprintf(stderr, "Error retrieving this machine's connection information. Error %d\n", get_socket_errno());
@@ -122,6 +122,7 @@ int main(int len, char** args) {
 
     // this_machine now has the information for the current machine
     printf("Creating the listening socket.\n");
+    //                                        the socket family    the socket type             the socket protocol
     socket_type listening_socket = socket(this_machine->ai_family, this_machine->ai_socktype, this_machine->ai_protocol);
 
     if (!valid_socket(listening_socket)) {
@@ -131,6 +132,7 @@ int main(int len, char** args) {
 
     // bind the socket.
     printf("Binding the socket...\n");
+    //      socket to bind    , struct sockaddr*    ,   ai_addrlen
     if (bind(listening_socket, this_machine->ai_addr, this_machine->ai_addrlen)) {
         fprintf(stderr, "Failed to bind the listening socket. Error %d\n", get_socket_errno());
         exit(EXIT_FAILURE);
