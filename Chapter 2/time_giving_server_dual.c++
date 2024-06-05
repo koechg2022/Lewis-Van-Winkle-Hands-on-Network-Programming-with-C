@@ -1,5 +1,7 @@
 #if defined(_WIN16) || defined(_WIN23) || defined(_WIN64) || defined(__WIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
+    #define _CRT_SECURE_NO_WARNINGS
+    
     #if not defined(_WIN32_WINNT)
         #define _WIN32_WINNT 0x0600
     #endif
@@ -118,11 +120,19 @@ int main(int len, char** args) {
     }
 
     printf("Configuring the listening socket to work with both IPV4 and IPV6...\n");
-    int option = 0;
-    if (setsockopt(listening_socket, IPPROTO_IPV6, IPV6_V6ONLY, (void*) &option, sizeof(option))) {
-        fprintf(stderr, "Failed to configure the listening socket to work with both IPV4 and IPV6. Error %d\n", get_socket_errno());
-        exit(EXIT_FAILURE);
-    }
+    #if defined(unix_os)
+        int option = 0;
+        if (setsockopt(listening_socket, IPPROTO_IPV6, IPV6_V6ONLY, (void*) &option, sizeof(option))) {
+            fprintf(stderr, "Failed to configure the listening socket to work with both IPV4 and IPV6. Error %d\n", get_socket_errno());
+            exit(EXIT_FAILURE);
+        }
+    #else
+        char option[buffer_size];
+        if (setsockopt(listening_socket, IPPROTO_IPV6, IPV6_V6ONLY, option, buffer_size)) {
+            fprintf(stderr, "Failed to configure the listening socket to work with both IPV4 and IPV6. Error %d\n", get_socket_errno());
+            exit(EXIT_FAILURE);
+        }
+    #endif
 
 
     printf("Binding the listening socket to the local address...\n");
