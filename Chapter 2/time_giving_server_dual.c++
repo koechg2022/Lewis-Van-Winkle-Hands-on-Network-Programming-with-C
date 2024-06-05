@@ -128,6 +128,7 @@ int main(int len, char** args) {
         }
     #else
         char option[buffer_size];
+        option[0] = 0;
         if (setsockopt(listening_socket, IPPROTO_IPV6, IPV6_V6ONLY, option, buffer_size)) {
             fprintf(stderr, "Failed to configure the listening socket to work with both IPV4 and IPV6. Error %d\n", get_socket_errno());
             exit(EXIT_FAILURE);
