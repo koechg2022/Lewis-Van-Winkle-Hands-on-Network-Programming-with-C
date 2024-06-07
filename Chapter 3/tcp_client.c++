@@ -80,6 +80,8 @@ char to_caps(const char c);
 
 char to_lower(const char c);
 
+void capitalize(char* the_string);
+
 void initialize();
 
 void clean_up();
@@ -230,6 +232,14 @@ char to_caps(const char c) {
 char to_lower(const char c) {
     return (is_caps(c)) ? c + ('a' - 'A') : c;
 }
+
+void capitalize(char* the_string) {
+    unsigned long index;
+    for (index = 0; the_string[index] != '\0'; index = index + 1) {
+        the_string[index] = to_caps(the_string[index]);
+    }
+}
+
 
 void initialize() {
     #if defined(crap_os)
