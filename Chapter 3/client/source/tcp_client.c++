@@ -188,17 +188,17 @@ int clean_up(const socket_type max_socket) {
     int error_code;
     socklen_t error_code_size = (int) sizeof(error_code);
     socket_type this_socket;
-    printf("max_socket is %d\n", max_socket);
+    // printf("max_socket is %d\n", max_socket);
     for (this_socket = 0; this_socket <= max_socket; this_socket = this_socket + 1) {
         // don't wanna mess with std sockets at all.
-        printf("In for loop. this_socket = %d\n", this_socket);
+        // printf("In for loop. this_socket = %d\n", this_socket);
         if (is_std_socket(this_socket)) {
             continue;
         }
         if (get_socket_option(this_socket, error_code, error_code_size)) {
             continue;
         }
-        printf("Closing socket %d\n", this_socket);
+        // printf("Closing socket %d\n", this_socket);
         close_socket(this_socket);
     }
     #if defined(crap_os)
@@ -214,7 +214,7 @@ int run_client(char* host, char* port) {
     }
 
     struct addrinfo hints, *remote_machine;
-    socket_type remote_sock, max_socket = 0;
+    socket_type remote_sock, max_socket = 0, extra_sock;
     char remote_addr[buffer_size], serv_buff[buffer_size], received_msg[four_kb];
     fd_set master_set, ready_set;
     int status, socket_count, received_bytes, sent_bytes;
@@ -291,6 +291,15 @@ int run_client(char* host, char* port) {
             if (received_bytes < 1) {
                 printf("Connection closed by peer\n");
                 FD_CLR(remote_sock, &master_set);
+                max_socket = STDERR_FILENO;
+                for (extra_sock = 0; extra_sock < remote_sock; extra_sock = extra_sock + 1) {
+                    if (is_std_socket(extra_sock)) {
+                        continue;
+                    }
+                    if (extra_sock > max_socket) {
+                        max_socket = extra_sock;
+                    }
+                }
                 socket_count = socket_count - 1;
                 break;
             }
