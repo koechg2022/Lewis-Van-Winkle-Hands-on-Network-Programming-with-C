@@ -81,11 +81,11 @@
 
 #endif
 
-#if not defined(_LIBCPP_STDIO_H)
+#if defined(unix_os) && not defined(_LIBCPP_STDIO_H) // NEED to add check for crap os (windows)
     #include <stdio.h>
 #endif
 
-#if not defined(_LIBCPP_STRING_H)
+#if defined(unix_os) && not defined(_LIBCPP_STRING_H) // NEED to add check for crap os (windows)
     #include <string.h>
 #endif
 
