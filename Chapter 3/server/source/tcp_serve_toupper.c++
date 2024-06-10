@@ -23,6 +23,9 @@
         sock == STD_OUTPUT_HANDLE ||\
         sock == STD_ERROR_HANDLE\
     )
+    #define INPUT_SOCK STD_INPUT_HANDLE
+    #define OUTPUT_SOCK STD_OUTPUT_HANDLE
+    #define ERR_SOCK STD_ERROR_HANDLE
 
     #define socket_type SOCKET
 
@@ -71,6 +74,10 @@
     )
 
     #define socket_type int
+    
+    #define INPUT_SOCK STDIN_FILENO
+    #define OUTPUT_SOCK STDOUT_FILENO
+    #define ERR_SOCK STDERR_FILENO
 
 #endif
 
@@ -111,6 +118,7 @@ void lowerize(char* the_string);
 int initialize();
 int clean_up(socket_type max_socket);
 int run_server(char* port = default_port);
+socket_type max_socket(socket_type first, socket_type second);
 
 int main(int len, char** args) {
     if (len > 2) {
@@ -268,7 +276,7 @@ int run_server(char* port) {
 
         // printf("Reached.\n");
 
-        for (this_sock = 1; this_sock <= max_socket; this_sock = this_sock + 1) {
+        for (this_sock = 0; this_sock <= max_socket; this_sock = this_sock + 1) {
             
             if (FD_ISSET(this_sock, &reads)) {
 
@@ -343,4 +351,9 @@ int run_server(char* port) {
     clean_up(max_socket);
     printf("Finished\n");
     return 0;
+}
+
+
+socket_type max_socket(socket_type first, socket_type second) {
+    return (first >= second) ? first : second;
 }
