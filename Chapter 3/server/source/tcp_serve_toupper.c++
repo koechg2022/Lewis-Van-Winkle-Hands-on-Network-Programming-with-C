@@ -312,7 +312,7 @@ int run_server(char* port) {
                         close_socket(this_sock);
                         if (socket_count - 1 == 1) {
                             memset(message, 0, kilo_byte);
-                            printf("There are no more connections to this socket. Close the server?: ");
+                            printf("There are no more connections to this socket. Close the server? (enter 'yes' to close, anything else otherwise): ");
                             fgets(message, kilo_byte, stdin);
                             if (same_string(message, (char *) "yes") || same_char(message[0], 'y')) {
                                 exit_prog = true;
