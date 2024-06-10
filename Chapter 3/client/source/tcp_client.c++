@@ -186,7 +186,7 @@ int initialize() {
 
 int clean_up(const socket_type max_socket) {
     int error_code;
-    socklen_t error_code_size = (int) sizeof(error_code);
+    socklen_t error_code_size = sizeof(error_code);
     socket_type this_socket;
     // printf("max_socket is %d\n", max_socket);
     for (this_socket = 0; this_socket <= max_socket; this_socket = this_socket + 1) {

@@ -17,6 +17,12 @@
     #define close_socket(the_socket) (closesocket(the_socket))
     #define get_socket_errno() (WSAGetLastError())
     #define has_keyboard_input(socket_set) (_kbhit())
+    #define get_socket_option(this_sock, e_code, e_code_size) (getsockopt(this_sock, SOL_SOCKET, SO_ERROR, (char *) &e_code, &e_code_size) == SOCKET_ERROR)
+    #define is_std_socket(sock) (\
+        sock == STD_INPUT_HANDLE ||\
+        sock == STD_OUTPUT_HANDLE ||\
+        sock == STD_ERROR_HANDLE\
+    )
 
     #define socket_type SOCKET
 
@@ -57,6 +63,12 @@
     #define close_socket(the_socket) (close(the_socket))
     #define get_socket_errno() (errno)
     #define has_keyboard_input(socket_set) (FD_ISSET(STDIN_FILENO, &socket_set))
+    #define get_socket_option(this_sock, e_code, e_code_size) (getsockopt(this_sock, SOL_SOCKET, SO_ERROR, &e_code, &e_code_size) == -1)
+    #define is_std_socket(sock) (\
+        sock == STDIN_FILENO ||\
+        sock == STDOUT_FILENO ||\
+        sock == STDERR_FILENO\
+    )
 
     #define socket_type int
 
@@ -70,198 +82,51 @@
     #include <string.h>
 #endif
 
-
+#define MACHINE_INIT_FAIL 1
 #define MACHINE_ADDR_RET_FAIL 2
 #define SOCKET_CREAT_FAIL 3
 #define BIND_SOCKET_FAIL 4
 #define LISTEN_SOCKET_FAIL 5
 #define SEL_SOCKET_FAIL 6
 #define NEW_CONNECT_FAIL 7
+#define ILLEG_ARGS 8
 
 #define buffer_size 100
 #define kilo_byte 1024
 #define four_kbytes 4096
+#define listen_lim 20
+
+#define default_port (char*) "8080"
 
 
 
 bool is_caps(const char c);
 bool is_lower(const char c);
-
 bool same_char(const char a, const char b, bool ignore_case = true);
 bool same_string(const char* first, const char* second, bool ignore_case = true);
-
 char to_caps(const char c);
 char to_lower(const char c);
-
 void capitalize(char* the_string);
-
-
+void lowerize(char* the_string);
 int initialize();
+int clean_up(socket_type max_socket);
+int run_server(char* port = default_port);
 
-int clean_up();
-
-int main(void) {
-    if (initialize()) {
-        return 1;
+int main(int len, char** args) {
+    if (len > 2) {
+        fprintf(stderr, "Usage : %s <port | None> (Either enter something or nothing for the port)\n", args[0]);
+        return ILLEG_ARGS;
     }
-    const char* port_val = "8080";
-    const int listen_limit = 10;
-    printf("Configuring local address...\n");
-    struct addrinfo hints, *this_machine;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    if (getaddrinfo(0, port_val, &hints, &this_machine)) {
-        fprintf(stderr, "Failed to retrieve this machine's socket information. Error %d\n", get_socket_errno());
-        return MACHINE_ADDR_RET_FAIL;
-    }
-
-    printf("Creating socket...\n");
-    socket_type listening_socket = socket(this_machine->ai_family, this_machine->ai_socktype, this_machine->ai_protocol);
-    if (!valid_socket(listening_socket)) {
-        fprintf(stderr, "Failed to create the listening socket on this server. Error %d\n", get_socket_errno());
-        freeaddrinfo(this_machine);
-        return SOCKET_CREAT_FAIL;
-    }
-
-    printf("Binding the socket...\n");
-    if (bind(listening_socket, this_machine->ai_addr, this_machine->ai_addrlen)) {
-        fprintf(stderr, "Failed to bind the newly created listening socket for this server. Error %d\n", get_socket_errno());
-        close_socket(listening_socket);
-        freeaddrinfo(this_machine);
-        return BIND_SOCKET_FAIL;
-    }
-
-    freeaddrinfo(this_machine);
-
-
-    printf("Listening...\n");
-    if (listen(listening_socket, listen_limit)) {
-        fprintf(stderr, "Failed to start listening on the listening socket of this server. Error %d\n", get_socket_errno());
-        close_socket(listening_socket);
-        return LISTEN_SOCKET_FAIL;
-    }
-
-    fd_set master_set;
-    FD_ZERO(&master_set);
-    FD_SET(listening_socket, &master_set);
-    socket_type max_socket = listening_socket;
-
-    char addr_buff[buffer_size], serv_buff[buffer_size];
-    getnameinfo(this_machine->ai_addr, this_machine->ai_addrlen, addr_buff, buffer_size, serv_buff, buffer_size, NI_NUMERICHOST | NI_NUMERICSERV);
-    printf("Connect to this machine with:\t%s and service %s\n", addr_buff, serv_buff);
-    getnameinfo(this_machine->ai_addr, this_machine->ai_addrlen, addr_buff, buffer_size, serv_buff, buffer_size, NI_NAMEREQD);
-    printf("\t%s\t:\t%s\n", addr_buff, serv_buff);
-
-    printf("Waiting for connections...\n");
-    char client_msg[four_kbytes];
-    int bytes_rec, bytes_sent;
-
-    struct sockaddr_storage new_client;
-    socklen_t client_size = sizeof(new_client);
-    socket_type new_socket;
-
-    bool break_all = false;
-    while (true) {
-        fd_set read_set;
-        read_set = master_set;
-        if (select(max_socket + 1, &read_set, 0, 0, 0) < 0) {
-            fprintf(stderr, "Failed to correctly select a socket. An error occured. Error %d\n", get_socket_errno());
-            return SEL_SOCKET_FAIL;
-        }
-
-        socket_type this_socket;
-        for (this_socket = 1; this_socket <= max_socket; this_socket = this_socket + 1) {
-            
-            // Is there a new incomming connection?
-            if (FD_ISSET(this_socket, &read_set)) {
-
-                // there is a new incomming connection:
-                if (this_socket == listening_socket) {
-                    new_socket = accept(listening_socket, (struct sockaddr*) &new_client, &client_size);
-
-                    if (!valid_socket(new_socket)) {
-                        fprintf(stderr, "Failed to accept new connection. Error %d\n", get_socket_errno());
-                        return NEW_CONNECT_FAIL;
-                    }
-
-                    FD_SET(new_socket, &master_set);
-                    if (new_socket > max_socket) {
-                        max_socket = new_socket;
-                    }
-                    
-                    getnameinfo((struct sockaddr*) &new_client, client_size, addr_buff, buffer_size, serv_buff, buffer_size, NI_NUMERICHOST | NI_NUMERICSERV);
-                    printf("New connection from %s (%s)\n", addr_buff, serv_buff);
-
-                }
-
-                else if (has_keyboard_input(read_set)) {
-                    if (!fgets(client_msg, four_kbytes, stdin)) {
-                        printf("Could not understand input.\n");
-                        continue;
-                    }
-                    if (same_string(client_msg, (char *) "exit")) {
-                        break_all = true;
-                        break;
-                    }
-                    
-                }
-
-                // There is a message from a client that is already connected
-                else {
-                    bytes_rec = recv(this_socket, client_msg, four_kbytes, 0);
-                    if (bytes_rec < 1) {
-                        FD_CLR(this_socket, &master_set);
-                        close_socket(this_socket);
-                        continue;
-                    }
-                    // make the message uppercase
-                    capitalize(client_msg);
-                    bytes_sent = send(this_socket, client_msg, bytes_rec, 0);
-                    printf("Sent %d of %d bytes.\n", bytes_sent, bytes_rec);
-                    memset(client_msg, 0, four_kbytes);
-                }
-
-            }
-
-
-        }
-        if (break_all) {
-            for (this_socket = 1; this_socket <= max_socket; this_socket = this_socket + 1) {
-                if (this_socket == STDIN_FILENO || this_socket == STDOUT_FILENO || this_socket == STDERR_FILENO) {
-                    continue;
-                }
-                close_socket(this_socket);
-            }
-            break;
-        }
-    }
-
-    printf("Closing listening socket...\n");
-    close_socket(listening_socket);
-
-    clean_up();
-    printf("Finished. Socket is closing now.\n");
-    return 0;
+    return (len == 2) ? run_server(args[1]) : run_server();
 }
 
 
 bool is_caps(const char c) {
-    return (c >= 'A' && c <= 'Z');
+    return (c >='A' && c <= 'Z');
 }
 
 bool is_lower(const char c) {
     return (c >= 'a' && c <= 'z');
-}
-
-char to_caps(const char c) {
-    return (is_lower(c)) ? (c - ('a' - 'A')) : c;
-}
-
-char to_lower(const char c) {
-    return (is_caps(c)) ? (c + ('a' - 'A')) : c;
 }
 
 bool same_char(const char a, const char b, bool ignore_case) {
@@ -270,12 +135,16 @@ bool same_char(const char a, const char b, bool ignore_case) {
 
 bool same_string(const char* first, const char* second, bool ignore_case) {
     unsigned long index;
-    for (index = 0; first[index] != '\0' && second[index] != '\0'; index = index + 1) {
-        if (!same_char(first[index], second[index], ignore_case)) {
-            return false;
-        }
-    }
+    for (index = 0; first[index] != '\0' && second[index] != '\0' && !same_char(first[index], second[index], ignore_case); index = index + 1);
     return first[index] == '\0' && second[index] == '\0';
+}
+
+char to_caps(const char c) {
+    return (is_lower(c)) ? (c - ('a' - 'A')) : c;
+}
+
+char to_lower(const char c) {
+    return ((is_caps(c))) ? (c + ('a' - 'A')) : c;
 }
 
 void capitalize(char* the_string) {
@@ -285,22 +154,193 @@ void capitalize(char* the_string) {
     }
 }
 
+void lowerize(char* the_string) {
+    int index;
+    for (index = 0; the_string[index] != '\0'; index = index + 1) {
+        the_string[index] = to_lower(the_string[index]);
+    }
+}
 
 int initialize() {
     #if defined(crap_os)
         WSADATA d;
         if (WSAStartup(MAKEWORD(2, 2), &d)) {
-            fprintf(stderr, "Failed to initialize crap network.\n");
-            return 1;
+            return MACHINE_INIT_FAIL;
         }
     #endif
     return 0;
 }
 
+int clean_up(socket_type max_socket) {
+    int e_code;
+    socklen_t e_code_size = sizeof(e_code);
+    socket_type this_socket;
+    for (this_socket = 0; this_socket <= max_socket; this_socket = this_socket + 1) {
+        if (is_std_socket(this_socket)) {
+            continue;
+        }
 
-int clean_up() {
+        if (get_socket_option(this_socket, e_code, e_code_size)) {
+            continue;
+        }
+
+        close_socket(this_socket);
+    }
     #if defined(crap_os)
         WSACleanup();
     #endif
+    return 0;
+}
+
+int run_server(char* port) {
+    if (initialize()) {
+        fprintf(stderr, "Yo... you're trying to run a server on Windows... Freakin' Windows needs network initialization but this machine failed to initialize! Error %d.\n", get_socket_errno());
+        return MACHINE_INIT_FAIL;
+    }
+
+    struct addrinfo hints, *server_machine;
+    char this_addr[buffer_size], this_serv[buffer_size], message[kilo_byte];
+    socket_type listen_sock, max_socket, this_sock, client_sock;
+    struct sockaddr_storage new_client;
+    socklen_t client_size;
+    int socket_count;
+    printf("Configuring local address...\n");
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if (getaddrinfo(0, port, &hints, &server_machine)) {
+        fprintf(stderr, "Failed to retrieve this machine's address information. Not ideal. Error %d...\n", get_socket_errno());
+        return MACHINE_ADDR_RET_FAIL;
+    }
+
+    // Retrieved this machine's information.
+    if (getnameinfo(server_machine->ai_addr, server_machine->ai_addrlen, this_addr, buffer_size, this_serv, buffer_size, NI_NUMERICHOST | NI_NUMERICSERV)) {
+        fprintf(stderr, "Failed to retrieve this machine's machine address as a char* IP address. Error %d", get_socket_errno());
+        return MACHINE_ADDR_RET_FAIL;
+    }
+
+    printf("Creating socket...\n");
+    listen_sock = socket(server_machine->ai_family, server_machine->ai_socktype, server_machine->ai_protocol);
+    if (!valid_socket(listen_sock)) {
+        fprintf(stderr, "Failed to create the listening socket for this machine (%s)\n", this_addr);
+        freeaddrinfo(server_machine);
+        return SOCKET_CREAT_FAIL;
+    }
+
+    printf("Binding socket to local address...\n");
+    if (bind(listen_sock, server_machine->ai_addr, server_machine->ai_addrlen)) {
+        fprintf(stderr, "Failed to bind the listening socket to a local address. Error %d\n", get_socket_errno());
+        freeaddrinfo(server_machine);
+        return BIND_SOCKET_FAIL;
+    }
+    freeaddrinfo(server_machine);
+    printf("Listening socket has been bound to local address.\n\nTo Connect to this this server, use this address and service:\n");
+    printf("\tIP Address : %s\n\tService/Port : %s\n", this_addr, this_serv);
+
+    if (listen(listen_sock, listen_lim)) {
+        fprintf(stderr, "Failure to listen on the bound socket. Error %d\n", get_socket_errno());
+        close_socket(listen_sock);
+        return LISTEN_SOCKET_FAIL;
+    }
+
+    fd_set master, reads;
+
+    FD_ZERO(&master);
+    FD_SET(listen_sock, &master);
+    max_socket = listen_sock;
+    socket_count = 1;
+    printf("Waiting for connections...\n");
+    bool exit_prog = false;
+    while (true) {
+        // reads = master;
+        FD_COPY(&master, &reads);
+        // printf("reads is now :\n");
+        // for (this_sock = 1; this_sock <= max_socket; this_sock = this_sock + 1) {
+        //     printf("this_sock\t:\t%d\n", this_sock);
+        // }
+        if (select(max_socket + 1, &reads, 0, 0, 0) < 0) {
+            fprintf(stderr, "Failed to correctly select a socket. Something went wrong. Error %d\n", get_socket_errno());
+            clean_up(max_socket);
+            return SEL_SOCKET_FAIL;
+        }
+
+        // printf("Reached.\n");
+
+        for (this_sock = 1; this_sock <= max_socket; this_sock = this_sock + 1) {
+            
+            if (FD_ISSET(this_sock, &reads)) {
+
+                if (is_std_socket(this_sock)) {
+                    printf("Ignoring std socket.\n");
+                    continue;
+                }
+                
+                else if (this_sock == listen_sock) {
+                    client_size = sizeof(new_client);
+                    client_sock = accept(this_sock, (struct sockaddr*) &new_client, &client_size);
+                    if (!valid_socket(client_sock)) {
+                        fprintf(stderr, "Failed to accept a new incomming connection. Could not create new socket. Error %d\n", get_socket_errno());
+                        clean_up(max_socket);
+                        return NEW_CONNECT_FAIL;
+                    }
+
+                    FD_SET(client_sock, &master);
+
+                    if (client_sock > max_socket) {
+                        max_socket = client_sock;
+                    }
+
+                    if (getnameinfo((struct sockaddr*) &new_client, client_size, this_addr, buffer_size, this_serv, buffer_size, NI_NUMERICHOST)) {
+                        fprintf(stderr, "Failed to convert new connection information into a readable IP address. Error %d\n", get_socket_errno());
+                        clean_up(max_socket);
+                        return NEW_CONNECT_FAIL;
+                    }
+
+                    printf("New connection from:\n\t%s\n\t\t%s\n", this_addr, this_serv);
+                    socket_count = socket_count + 1;
+
+                }
+
+                
+                else {
+                    printf("In else branch\n");
+                    int bytes_received = recv(this_sock, message, kilo_byte, 0);
+                    if (bytes_received < 1) {
+                        FD_CLR(this_sock, &master);
+                        close_socket(this_sock);
+                        if (socket_count - 1 == 1) {
+                            memset(message, 0, kilo_byte);
+                            printf("There are no more connections to this socket. Close the server?: ");
+                            fgets(message, kilo_byte, stdin);
+                            if (same_string(message, (char *) "yes") || same_char(message[0], 'y')) {
+                                exit_prog = true;
+                                break;
+                            }
+                        }
+                        continue;
+                    }
+                    printf("Bytes received \"%.*s\"\n", bytes_received, message);
+                    message[bytes_received] = '\0';
+                    printf("Received:\n\"%s\"\n", message);
+                    capitalize(message);
+                    printf("About to send:\n\"%s\"\n", message);
+                    send(this_sock, message, bytes_received, 0);
+                }
+
+            }
+
+
+        }
+
+        if (exit_prog) {
+            break;
+        }
+
+    }
+
+    clean_up(max_socket);
+    printf("Finished\n");
     return 0;
 }
