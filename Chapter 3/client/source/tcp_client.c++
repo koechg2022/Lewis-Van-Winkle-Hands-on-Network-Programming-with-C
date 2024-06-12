@@ -256,17 +256,29 @@ int run_client(char* host, char* port) {
         return SOCKET_CREAT_FAIL;
     }
 
-    printf("Successfully created the socket for the remote machine at \"%s\". Socket is %d\n", remote_addr, remote_sock);
+    #if defined(crap_os)
+        printf("Successfully created the socket for the remote machine at \"%s\". Socket is %llu\n", remote_addr, remote_sock);
+    #else
+        printf("Successfully created the socket for the remote machine at \"%s\". Socket is %d\n", remote_addr, remote_sock);
+    #endif
 
     printf("Connecting the socket to the remote machine:\n");
 
     if (connect(remote_sock, remote_machine->ai_addr, remote_machine->ai_addrlen)) {
-        fprintf(stderr, "Failed to connect socket %d to the remote machine. Error %d\n", remote_sock, get_socket_errno());
+        #if defined(crap_os)
+            fprintf(stderr, "Failed to connect socket %d to the remote machine. Error %llu\n", remote_sock, get_socket_errno());
+        #else
+            fprintf(stderr, "Failed to connect socket %d to the remote machine. Error %d\n", remote_sock, get_socket_errno());
+        #endif
         return CONNECT_FAIL;
     }
 
     freeaddrinfo(remote_machine);
-    printf("Successfully connected socket \"%d\" with remote machine \"%s\"\n", remote_sock, remote_addr);
+    #if defined(crap_os)
+        printf("Successfully connected socket \"%llu\" with remote machine \"%s\"\n", remote_sock, remote_addr);
+    #else
+        printf("Successfully connected socket \"%d\" with remote machine \"%s\"\n", remote_sock, remote_addr);
+    #endif
     printf("To send a message, enter the message followed by the '%s' key\n\n", get_return_key());
     FD_ZERO(&master_set);
     FD_SET(remote_sock, &master_set);
