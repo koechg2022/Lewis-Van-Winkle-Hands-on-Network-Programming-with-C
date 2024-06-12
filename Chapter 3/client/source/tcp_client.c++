@@ -266,7 +266,7 @@ int run_client(char* host, char* port) {
 
     if (connect(remote_sock, remote_machine->ai_addr, remote_machine->ai_addrlen)) {
         #if defined(crap_os)
-            fprintf(stderr, "Failed to connect socket %d to the remote machine. Error %llu\n", remote_sock, get_socket_errno());
+            fprintf(stderr, "Failed to connect socket %llu to the remote machine. Error %d\n", remote_sock, get_socket_errno());
         #else
             fprintf(stderr, "Failed to connect socket %d to the remote machine. Error %d\n", remote_sock, get_socket_errno());
         #endif
@@ -329,7 +329,11 @@ int run_client(char* host, char* port) {
             }
             size_t msg_len = strlen(received_msg);
             sent_bytes = send(remote_sock, received_msg, msg_len, 0);
-            printf("Sent %d bytes of %lu bytes to \"%s\"\n", sent_bytes, msg_len, remote_addr);
+            #if defined(crap_os)
+                printf("Sent %d bytes of %zu bytes to \"%s\"\n", sent_bytes, msg_len, remote_addr);
+            #else
+                printf("Sent %d bytes of %lu bytes to \"%s\"\n", sent_bytes, msg_len, remote_addr);
+            #endif
         }
         
     }
