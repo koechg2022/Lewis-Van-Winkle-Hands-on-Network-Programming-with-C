@@ -1,5 +1,6 @@
 
 
+
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64) || defined(__WIN__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 
     #define crap_os
@@ -9,7 +10,7 @@
     #endif
 
     #include <winsock2.h>
-    #include <w2tcpip.h>
+    #include <ws2tcpip.h>
 
     #pragma comment(lib, "ws2_32.lib")
 
@@ -26,6 +27,7 @@
     #define INPUT_SOCK STD_INPUT_HANDLE
     #define OUTPUT_SOCK STD_OUTPUT_HANDLE
     #define ERR_SOCK STD_ERROR_HANDLE
+    #include <cstdio>
 
     #define socket_type SOCKET
 
@@ -263,8 +265,8 @@ int run_server(char* port) {
     printf("Waiting for connections...\n");
     bool exit_prog = false;
     while (true) {
-        // reads = master;
-        FD_COPY(&master, &reads);
+        reads = master;
+        // FD_COPY(&master, &reads);
         // printf("reads is now :\n");
         // for (this_sock = 1; this_sock <= max_socket; this_sock = this_sock + 1) {
         //     printf("this_sock\t:\t%d\n", this_sock);
