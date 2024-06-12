@@ -36,7 +36,7 @@
         the_socket == STD_OUTPUT_HANDLE ||\
         the_socket == STD_ERROR_HANDLE\
     )
-    #define add_input_descriptor(the_set) ()
+    #define add_input_descriptor(the_set) (0)
 
 
 #else
