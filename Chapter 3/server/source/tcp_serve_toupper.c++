@@ -41,13 +41,14 @@
         #include <sys/socket.h>
     #endif
 
+    #if not defined(_NETINET_IN_H_)
+        #include <netinet/in.h>
+    #endif
+    
     #if not defined(_NETDB_H_)
         #include <netdb.h>
     #endif
 
-    #if not defined(_NETINET_IN_H_)
-        #include <netinet/in.h>
-    #endif
 
     #if not defined(_ARPA_INET_H_)
         #include <arpa/inet.h>
